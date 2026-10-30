@@ -1,0 +1,18 @@
+[package]
+name = "biogit-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Ядро BioGit: CAS-хранилище, 2-битное кодирование, снимки, ветви, умное слияние"
+
+[dependencies]
+sha2 = "0.10"
+hex = "0.4"
+flate2 = "1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+walkdir = "2"
+tempfile = "3"
+polars = { version = "0.46", default-features = false, features = ["csv"] }

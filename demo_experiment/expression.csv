@@ -1,0 +1,6 @@
+gene_id,control,treatment,p_value
+BRCA1,10.2,15.7,0.0031
+TP53,8.4,8.1,0.77
+EGFR,5.5,12.3,0.0007
+GAPDH,100.0,99.4,0.91
+MYC,3.2,9.9,0.012
