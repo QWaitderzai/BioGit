@@ -55,3 +55,53 @@ code {
   padding: 1px 5px;
   border-radius: 4px;
 }
+
+/* приветственный экран */
+
+.welcome {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.welcome-card {
+  width: 520px;
+  max-width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 32px;
+  text-align: center;
+}
+
+.welcome-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.welcome-logo img {
+  width: 48px;
+  height: 48px;
+}
+
+.welcome-subtitle {
+  color: var(--muted);
+  margin: 12px 0 20px;
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 20px;
+}
