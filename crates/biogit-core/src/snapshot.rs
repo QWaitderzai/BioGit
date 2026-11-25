@@ -21,6 +21,20 @@ pub struct FileEntry {
     pub size: u64,
 }
 
+/// Содержимое файла рабочей папки (отдаётся в редактор в интерфейсе).
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct FileContent {
+    /// Текст файла, если он UTF-8; у двоичных — `None`.
+    pub text: Option<String>,
+    /// Двоичный файл — в редакторе его открывать нельзя.
+    pub is_binary: bool,
+    /// Размер файла, байт.
+    pub size: u64,
+}
+
+/// Файлы крупнее этого в редактор не грузим.
+pub(crate) const MAX_EDITOR_FILE_SIZE: u64 = 5 * 1024 * 1024;
+
 /// Проверяет имя ветки: буквы/цифры/`-`/`_`/`.`, без выхода за пределы refs.
 pub(crate) fn validate_branch_name(name: &str) -> Result<()> {
     let ok = !name.is_empty()
@@ -294,6 +308,45 @@ impl Repo {
         self.collect_files()
     }
 
+    /// Читает файл рабочей папки для редактора. Двоичные (не UTF-8 или с
+    /// NUL-байтом) отдаются без текста — отредактировать их всё равно не получится.
+    pub fn read_work_file(&self, name: &str) -> Result<FileContent> {
+        Self::validate_entry_name(name)?;
+        let path = self.root.join(name);
+        let size = fs::metadata(&path)?.len();
+        if size > MAX_EDITOR_FILE_SIZE {
+            return Err(BioGitError::InvalidState(format!(
+                "файл слишком большой для встроенного редактора: {size} байт (лимит 5 МБ)"
+            )));
+        }
+        let bytes = fs::read(&path)?;
+        let (is_binary, text) = if bytes.contains(&0) {
+            (true, None)
+        } else {
+            match String::from_utf8(bytes) {
+                Ok(text) => (false, Some(text)),
+                Err(_) => (true, None),
+            }
+        };
+        Ok(FileContent {
+            text,
+            is_binary,
+            size,
+        })
+    }
+
+    /// Пишет текст в файл рабочей папки, при необходимости создавая
+    /// вложенные папки. Возвращает новый размер файла.
+    pub fn write_work_file(&self, name: &str, content: &str) -> Result<u64> {
+        Self::validate_entry_name(name)?;
+        let path = self.root.join(name);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(&path, content)?;
+        Ok(fs::metadata(&path)?.len())
+    }
+
     /// Защита от path traversal при восстановлении файлов.
     fn validate_entry_name(name: &str) -> Result<()> {
         let dangerous = name.is_empty()
@@ -437,6 +490,69 @@ mod tests {
 
         repo.restore(&snap.hash).expect("восстановление");
         assert_eq!(std::fs::read_to_string(repo.root().join("results/out.csv")).expect("содержимое"), "ok");
+    }
+
+    #[test]
+    fn чтение_и_запись_рабочего_файла() {
+        let (_dir, repo) = repo_in_tmp();
+        std::fs::write(repo.root().join("notes.txt"), "заметки").expect("файл");
+
+        let content = repo.read_work_file("notes.txt").expect("чтение");
+        assert_eq!(content.text.as_deref(), Some("заметки"));
+        assert!(!content.is_binary);
+        assert_eq!(content.size, "заметки".len() as u64);
+
+        let size = repo
+            .write_work_file("notes.txt", "обновлённые заметки")
+            .expect("запись");
+        assert_eq!(size, "обновлённые заметки".len() as u64);
+        let updated = repo.read_work_file("notes.txt").expect("чтение");
+        assert_eq!(updated.text.as_deref(), Some("обновлённые заметки"));
+    }
+
+    #[test]
+    fn запись_создаёт_вложенные_папки() {
+        let (_dir, repo) = repo_in_tmp();
+        let size = repo
+            .write_work_file("results/day1/out.csv", "gene_id,value\nBRCA1,1\n")
+            .expect("запись");
+        assert!(size > 0);
+        let content = repo
+            .read_work_file("results/day1/out.csv")
+            .expect("чтение");
+        assert!(content.text.as_deref().unwrap().starts_with("gene_id"));
+    }
+
+    #[test]
+    fn двоичный_файл_не_возвращает_текст() {
+        let (_dir, repo) = repo_in_tmp();
+        std::fs::write(repo.root().join("gel.png"), [0x89u8, b'P', b'N', b'G', 0])
+            .expect("файл");
+
+        let content = repo.read_work_file("gel.png").expect("чтение");
+        assert!(content.is_binary);
+        assert!(content.text.is_none());
+        assert_eq!(content.size, 5);
+    }
+
+    #[test]
+    fn редактор_защищён_от_path_traversal() {
+        let (_dir, repo) = repo_in_tmp();
+        for bad in ["../secret.txt", "/etc/passwd", "a/../b", "a//b", ""] {
+            assert!(repo.read_work_file(bad).is_err(), "чтение {bad:?}");
+            assert!(repo.write_work_file(bad, "x").is_err(), "запись {bad:?}");
+        }
+    }
+
+    #[test]
+    fn чтение_чужого_файла_даёт_ошибку_и_лимит_размера() {
+        let (_dir, repo) = repo_in_tmp();
+        assert!(repo.read_work_file("нет_такого.txt").is_err());
+
+        let big = vec![b'a'; MAX_EDITOR_FILE_SIZE as usize + 1];
+        std::fs::write(repo.root().join("big.txt"), &big).expect("файл");
+        let err = repo.read_work_file("big.txt").expect_err("лимит размера");
+        assert!(matches!(err, BioGitError::InvalidState(_)));
     }
 
     #[test]
