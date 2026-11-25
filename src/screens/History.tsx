@@ -152,7 +152,7 @@ export default function History({ path, flash }: Props) {
           )}
           <div className="detail-actions">
             <button className="btn btn-primary" onClick={handleRestore} disabled={busy}>
-              Машина времени: вернуть файлы из этого снимка
+              вернуть файлы из этого снимка
             </button>
           </div>
         </section>
