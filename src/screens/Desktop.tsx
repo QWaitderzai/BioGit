@@ -7,9 +7,9 @@ interface Props {
 }
 
 const DEFAULT_PARAMS = `{
-  "temperature": 310,
-  "ph": 7.4,
-  "iterations": 500
+  "temperature": 0,
+  "ph": 0,
+  "iterations": 0
 }`;
 
 export default function Desktop({ path, flash }: Props) {
@@ -64,7 +64,7 @@ export default function Desktop({ path, flash }: Props) {
     setError(null);
     try {
       const count = await api.restoreSnapshot(path, snap.hash);
-      flash(`Машина времени: восстановлено файлов — ${count}`);
+      flash(`восстановлено файлов — ${count}`);
       await reload();
     } catch (e) {
       setError(String(e));
@@ -128,7 +128,7 @@ export default function Desktop({ path, flash }: Props) {
               </button>
             </div>
           ) : (
-            <p className="empty">Снимков ещё нет — сделайте первый</p>
+            <p className="empty">Снимков нет</p>
           )}
         </section>
       </div>

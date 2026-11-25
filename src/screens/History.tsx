@@ -55,7 +55,7 @@ export default function History({ path, flash }: Props) {
     setError(null);
     try {
       const count = await api.restoreSnapshot(path, selected.hash);
-      flash(`Машина времени: восстановлено файлов — ${count}`);
+      flash(`восстановлено файлов — ${count}`);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -89,7 +89,7 @@ export default function History({ path, flash }: Props) {
       </div>
 
       {snaps.length === 0 ? (
-        <p className="empty">На этой ветке пока нет снимков</p>
+        <p className="empty">На этой ветке нет снимков</p>
       ) : (
         <div className="timeline">
           {snaps.map((snap, index) => (

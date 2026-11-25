@@ -121,7 +121,7 @@ export default function MergeScreen({ path, flash }: Props) {
         <div className="save-bar">
           <input
             className="input input-grow"
-            placeholder="Имя новой ветви (например, hypothesis-low-ph)"
+            placeholder="Имя новой ветви"
             value={newBranch}
             onChange={(e) => setNewBranch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreateBranch()}
@@ -137,7 +137,7 @@ export default function MergeScreen({ path, flash }: Props) {
       </section>
 
       <section className="panel">
-        <h2 className="panel-title">Слияние гипотез</h2>
+        <h2 className="panel-title">Слияние</h2>
         <p className="panel-hint">
           Ветка-источник вливается в текущую ветку{" "}
           <span className="badge badge-branch">{state.current_branch}</span>.
