@@ -4,7 +4,9 @@
 
 use std::path::Path;
 
-use biogit_core::{BranchInfo, FileEntry, MergeReport, Repo, Snapshot};
+use biogit_core::{BranchInfo, FileContent, FileEntry, MergeReport, Repo, Snapshot};
+use tauri::AppHandle;
+use tauri_plugin_dialog::DialogExt;
 
 /// Полное состояние репозитория для интерфейса.
 #[derive(serde::Serialize)]
@@ -109,4 +111,35 @@ pub async fn switch_branch(path: String, name: String) -> Result<(), String> {
 pub async fn merge_branch(path: String, source: String) -> Result<MergeReport, String> {
     let repo = open(&path)?;
     biogit_core::merge_branch(&repo, &source).map_err(|e| e.to_string())
+}
+
+/// Системный диалог выбора папки (аналог «Open Folder» в VSCode).
+/// Возвращает выбранный путь или `None`, если пользователь отменил выбор.
+#[tauri::command]
+pub async fn pick_folder(app: AppHandle) -> Result<Option<String>, String> {
+    let (sender, mut receiver) = tauri::async_runtime::channel::<Option<String>>(1);
+    app.dialog().file().pick_folder(move |file_path| {
+        let _ = sender.send(file_path.map(|fp| fp.to_string()));
+    });
+    match receiver.recv().await {
+        Some(chosen) => Ok(chosen),
+        None => Err("канал диалога выбора папки закрыт".to_string()),
+    }
+}
+
+/// Читает файл рабочей папки для встроенного редактора:
+/// текст (UTF-8), признак двоичного файла и размер.
+#[tauri::command]
+pub async fn read_file(path: String, name: String) -> Result<FileContent, String> {
+    open(&path)?
+        .read_work_file(&name)
+        .map_err(|e| e.to_string())
+}
+
+/// Сохраняет текст в файл рабочей папки. Возвращает новый размер файла.
+#[tauri::command]
+pub async fn write_file(path: String, name: String, content: String) -> Result<u64, String> {
+    open(&path)?
+        .write_work_file(&name, &content)
+        .map_err(|e| e.to_string())
 }

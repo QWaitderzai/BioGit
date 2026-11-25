@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Базовые права окна BioGit",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "dialog:default"]
 }
