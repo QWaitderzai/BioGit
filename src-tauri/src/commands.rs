@@ -1,6 +1,6 @@
 //! Команды Tauri: тонкие обёртки над ядром `biogit-core`.
 //!
-//! Каждая команда возвращает `Result<T, String>`: ошибки ядра сериализуются
+//! Каждая команда возвращает `Result<T, String>`: ошибки ядра сериализуются в строку.
 
 use std::path::Path;
 
@@ -113,8 +113,7 @@ pub async fn merge_branch(path: String, source: String) -> Result<MergeReport, S
     biogit_core::merge_branch(&repo, &source).map_err(|e| e.to_string())
 }
 
-/// Системный диалог выбора папки (аналог «Open Folder» в VSCode).
-/// Возвращает выбранный путь или `None`, если пользователь отменил выбор.
+/// Диалог выбора папки; `None` — пользователь передумал.
 #[tauri::command]
 pub async fn pick_folder(app: AppHandle) -> Result<Option<String>, String> {
     let (sender, mut receiver) = tauri::async_runtime::channel::<Option<String>>(1);
@@ -127,8 +126,7 @@ pub async fn pick_folder(app: AppHandle) -> Result<Option<String>, String> {
     }
 }
 
-/// Читает файл рабочей папки для встроенного редактора:
-/// текст (UTF-8), признак двоичного файла и размер.
+/// Читает файл рабочей папки для редактора (текст, двоичность, размер).
 #[tauri::command]
 pub async fn read_file(path: String, name: String) -> Result<FileContent, String> {
     open(&path)?
@@ -136,7 +134,7 @@ pub async fn read_file(path: String, name: String) -> Result<FileContent, String
         .map_err(|e| e.to_string())
 }
 
-/// Сохраняет текст в файл рабочей папки. Возвращает новый размер файла.
+/// Пишет текст в файл рабочей папки, возвращает новый размер.
 #[tauri::command]
 pub async fn write_file(path: String, name: String, content: String) -> Result<u64, String> {
     open(&path)?

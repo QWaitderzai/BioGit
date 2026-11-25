@@ -1,21 +1,18 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { formatSize, type FileEntry } from "../api";
 
-/**
- * Проводник рабочей папки в стиле VSCode:
- * плоский список файлов превращается в дерево с раскрывающимися папками,
- * клик по файлу открывает его во встроенном редакторе.
- */
+// проводник в духе vscode: бэкенд отдаёт файлы плоским списком,
+// из него тут собирается дерево, клик по файлу открывает редактор
 
 interface TreeNode {
-  name: string; // имя папки или файла (последний сегмент пути)
-  path: string; // относительный путь от корня рабочей папки
+  name: string;
+  path: string; // путь от корня рабочей папки
   isDir: boolean;
   size: number;
   children: TreeNode[];
 }
 
-/** Строит дерево из плоского списка файлов с путями «a/b/c.csv». */
+// на входе пути вида "results/out.csv", раскладываем их по папкам
 function buildTree(files: FileEntry[]): TreeNode[] {
   const roots: TreeNode[] = [];
   const dirIndex = new Map<string, TreeNode>();
@@ -50,7 +47,7 @@ function buildTree(files: FileEntry[]): TreeNode[] {
   }
 
   const sortRec = (nodes: TreeNode[]) => {
-    // папки выше файлов, внутри алфавитный порядок
+    // папки сверху, внутри по алфавиту
     nodes.sort((a, b) =>
       a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1,
     );
@@ -60,7 +57,7 @@ function buildTree(files: FileEntry[]): TreeNode[] {
   return roots;
 }
 
-/** Класс цвета иконки по расширению файла. */
+// цвет иконки подбираем по расширению (био-форматы, таблицы, текст)
 function extClass(name: string): string {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   if (["fasta", "fa", "fna", "ffn", "faa", "frn"].includes(ext)) return "ext-bio";

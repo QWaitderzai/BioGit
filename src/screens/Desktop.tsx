@@ -6,7 +6,6 @@ import FileEditor, { type OpenTab } from "../components/FileEditor";
 interface Props {
   path: string;
   flash: (message: string) => void;
-  /** Открывает системный диалог выбора папки и переключается на неё. */
   openFolderPicker: () => Promise<void>;
 }
 
@@ -16,7 +15,7 @@ const DEFAULT_PARAMS = `{
   "iterations": 0
 }`;
 
-/** Имя корневой папки для заголовка проводника. */
+// последнее имя в пути — его и показываем в шапке проводника
 function rootName(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean);
   return parts[parts.length - 1] ?? path;
@@ -35,8 +34,8 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // рецепт из последнего снимка подтягивается только при первом открытии папки,
-  // чтобы «Обновить» не затирал правки пользователя
+  // рецепт из последнего снимка подтягиваем только при открытии папки,
+  // иначе «Обновить» будет затирать правки пользователя
   const paramsInitialized = useRef(false);
 
   const reload = useCallback(async () => {
@@ -56,7 +55,7 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
     void reload();
   }, [reload]);
 
-  // при смене рабочей папки закрываем вкладки предыдущей
+  // сменилась рабочая папка — закрываем вкладки старой
   useEffect(() => {
     setTabs([]);
     setActiveTab(null);
@@ -132,7 +131,7 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
   };
 
   const handleSave = async () => {
-    // проверяем JSON до отправки в ядро
+    // json проверяем на клиенте, чтобы не гонять заведомо битый в ядро
     try {
       JSON.parse(paramsText);
     } catch (e) {

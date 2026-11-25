@@ -48,7 +48,7 @@ export default function App() {
     setRecent(next);
   };
 
-  /** Открывает папку как репозиторий; при createIfMissing — инициализирует, если .biogit нет. */
+  // открываем папку; если там нет .biogit и createIfMissing — создаём репозиторий
   const openFolderPath = async (folder: string, createIfMissing: boolean): Promise<boolean> => {
     setBusy(true);
     setError(null);
@@ -81,10 +81,7 @@ export default function App() {
     }
   };
 
-  /**
-   * Системный диалог «Выбрать папку» (как «Open Folder» в VSCode).
-   * Если в выбранной папке нет репозитория — предлагает создать его.
-   */
+  // выбор папки системным диалогом; если репозитория в ней нет — предлагаем создать
   const pickAndOpen = async () => {
     setError(null);
     let folder: string | null = null;
@@ -94,7 +91,7 @@ export default function App() {
       setError(`Не удалось открыть диалог выбора папки: ${String(e)}`);
       return;
     }
-    if (!folder) return; // пользователь отменил выбор
+    if (!folder) return; // передумали
     rememberPath(folder);
     try {
       await api.openRepo(folder);

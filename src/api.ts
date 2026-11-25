@@ -20,11 +20,8 @@ export interface FileEntry {
 }
 
 export interface FileContent {
-  /** Текст файла; null для двоичных файлов. */
-  text: string | null;
-  /** Признак двоичного файла — в редакторе не открывается. */
+  text: string | null; // null, если файл двоичный
   is_binary: boolean;
-  /** Размер файла, байт. */
   size: number;
 }
 
@@ -115,14 +112,12 @@ export const api = {
   mergeBranch: (path: string, source: string) =>
     invoke<MergeReport>("merge_branch", { path, source }),
 
-  /** Системный диалог выбора папки; null — пользователь отменил. */
+  // null — пользователь закрыл диалог, папку не выбрал
   pickFolder: () => invoke<string | null>("pick_folder"),
 
-  /** Читает файл рабочей папки для встроенного редактора. */
   readFile: (path: string, name: string) =>
     invoke<FileContent>("read_file", { path, name }),
 
-  /** Сохраняет текст в файл рабочей папки; возвращает новый размер. */
   writeFile: (path: string, name: string, content: string) =>
     invoke<number>("write_file", { path, name, content }),
 };
