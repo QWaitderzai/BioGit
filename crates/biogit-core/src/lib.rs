@@ -39,5 +39,5 @@ pub use encoding::{pack_two_bit, reverse_complement, unpack_two_bit, Packed2Bit}
 pub use error::{BioGitError, Result};
 pub use merge::{merge_branch, ConflictItem, MergeReport};
 pub use object::{Snapshot, Tree, TreeEntry};
-pub use snapshot::{FileEntry, Repo};
+pub use snapshot::{FileContent, FileEntry, Repo};
 pub use storage::BlobStore;
