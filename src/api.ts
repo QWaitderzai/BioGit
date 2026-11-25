@@ -19,6 +19,12 @@ export interface FileEntry {
   size: number;
 }
 
+export interface FileContent {
+  text: string | null; // null, если файл двоичный
+  is_binary: boolean;
+  size: number;
+}
+
 export interface BranchInfo {
   name: string;
   snapshots: number;
@@ -105,4 +111,13 @@ export const api = {
 
   mergeBranch: (path: string, source: string) =>
     invoke<MergeReport>("merge_branch", { path, source }),
+
+  // null — пользователь закрыл диалог, папку не выбрал
+  pickFolder: () => invoke<string | null>("pick_folder"),
+
+  readFile: (path: string, name: string) =>
+    invoke<FileContent>("read_file", { path, name }),
+
+  writeFile: (path: string, name: string, content: string) =>
+    invoke<number>("write_file", { path, name, content }),
 };
