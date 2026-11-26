@@ -16,3 +16,5 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 walkdir = "2"
 tempfile = "3"
 polars = { version = "0.46", default-features = false, features = ["csv"] }
+calamine = { version = "0.38", features = ["chrono"] }
+rust_xlsxwriter = "0.104"
