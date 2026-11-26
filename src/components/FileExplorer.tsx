@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { formatSize, type FileEntry } from "../api";
+import { formatSize, type FileEntry, type FileStatus } from "../api";
 
 // проводник в духе vscode: бэкенд отдаёт файлы плоским списком,
-// из него тут собирается дерево, клик по файлу открывает редактор
+// из него тут собирается дерево, клик по файлу открывает редактор.
+// Статусы (изменён/новый/удалён) приходят из working_status и рисуются бейджами.
 
 interface TreeNode {
   name: string;
@@ -62,6 +63,7 @@ function extClass(name: string): string {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   if (["fasta", "fa", "fna", "ffn", "faa", "frn"].includes(ext)) return "ext-bio";
   if (["csv", "tsv"].includes(ext)) return "ext-data";
+  if (["xlsx", "xls", "xlsm", "xlsb", "ods"].includes(ext)) return "ext-sheet";
   if (ext === "json") return "ext-json";
   if (["md", "txt", "log"].includes(ext)) return "ext-doc";
   return "ext-other";
@@ -113,13 +115,32 @@ function FileIcon({ className }: { className: string }) {
   );
 }
 
+function StatusBadge({ state }: { state: FileStatus["state"] }) {
+  if (state === "unmodified") return null;
+  const label =
+    state === "modified" ? "М" : state === "added" ? "Н" : "У";
+  return (
+    <span className={`badge st-badge st-${state}`} title={
+      state === "modified"
+        ? "изменён с последнего снимка"
+        : state === "added"
+          ? "новый файл — нет в снимках"
+          : "удалён из рабочей папки"
+    }>
+      {label}
+    </span>
+  );
+}
+
 interface Props {
   files: FileEntry[];
   activeFile: string | null;
+  statuses: Map<string, FileStatus["state"]> | null;
+  deletedFiles: string[];
   onOpenFile: (name: string) => void;
 }
 
-export default function FileExplorer({ files, activeFile, onOpenFile }: Props) {
+export default function FileExplorer({ files, activeFile, statuses, deletedFiles, onOpenFile }: Props) {
   const tree = useMemo(() => buildTree(files), [files]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -157,11 +178,12 @@ export default function FileExplorer({ files, activeFile, onOpenFile }: Props) {
           </div>
         );
       }
+      const state = statuses?.get(node.path) ?? "unmodified";
       return (
         <button
           type="button"
           key={node.path}
-          className={`tree-row ${activeFile === node.path ? "tree-row-active" : ""}`}
+          className={`tree-row ${activeFile === node.path ? "tree-row-active" : ""} tree-row-${state}`}
           style={indent}
           onClick={() => onOpenFile(node.path)}
           title={`${node.path} · ${formatSize(node.size)}`}
@@ -169,12 +191,14 @@ export default function FileExplorer({ files, activeFile, onOpenFile }: Props) {
           <span className="tree-caret-spacer" aria-hidden="true" />
           <FileIcon className={extClass(node.name)} />
           <span className="tree-name">{node.name}</span>
+          <StatusBadge state={state} />
           <span className="tree-size">{formatSize(node.size)}</span>
         </button>
       );
     });
 
-  if (files.length === 0) {
+  const hasDeleted = deletedFiles.length > 0;
+  if (files.length === 0 && !hasDeleted) {
     return (
       <div className="tree">
         <p className="empty tree-empty">
@@ -186,5 +210,22 @@ export default function FileExplorer({ files, activeFile, onOpenFile }: Props) {
     );
   }
 
-  return <div className="tree">{renderNodes(tree, 0)}</div>;
+  return (
+    <div className="tree">
+      {renderNodes(tree, 0)}
+      {hasDeleted && (
+        <div className="tree-deleted">
+          <div className="detail-label">Удалённые с диска</div>
+          {deletedFiles.map((name) => (
+            <div key={name} className="tree-row tree-row-deleted" title={name}>
+              <span className="tree-caret-spacer" aria-hidden="true" />
+              <FileIcon className="ext-other" />
+              <span className="tree-name">{name}</span>
+              <StatusBadge state="deleted" />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

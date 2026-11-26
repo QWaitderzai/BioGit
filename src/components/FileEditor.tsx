@@ -1,8 +1,12 @@
+import { useState } from "react";
 import type { KeyboardEvent } from "react";
-import { formatSize } from "../api";
+import { formatSize, isCsvFile, isSheetFile } from "../api";
+import CsvTable from "./CsvTable";
+import SheetEditor from "./SheetEditor";
 
 // редактор с вкладками как в vscode: точка на вкладке — есть несохранённые правки,
-// сохранение по Ctrl+S или кнопкой, двоичные файлы можно только посмотреть
+// сохранение по Ctrl+S или кнопкой, двоичные файлы можно только посмотреть.
+// CSV открываются красивой таблицей, таблицы (xlsx) — табличным редактором.
 
 export interface OpenTab {
   name: string;
@@ -13,14 +17,18 @@ export interface OpenTab {
 }
 
 interface Props {
+  repoPath: string;
   tabs: OpenTab[];
   active: string | null;
   busy: boolean;
   sidebarOpen: boolean;
+  sheetDirty: boolean;
   onSelect: (name: string) => void;
   onClose: (name: string) => void;
   onChange: (name: string, content: string) => void;
   onSave: (name: string) => void;
+  onSheetSave: () => void;
+  onSheetDirtyChange: (dirty: boolean) => void;
   onToggleSidebar: () => void;
 }
 
@@ -35,16 +43,21 @@ function FileName({ name }: { name: string }) {
 }
 
 export default function FileEditor({
+  repoPath,
   tabs,
   active,
   busy,
   sidebarOpen,
+  sheetDirty,
   onSelect,
   onClose,
   onChange,
   onSave,
+  onSheetSave,
+  onSheetDirtyChange,
   onToggleSidebar,
 }: Props) {
+  const [viewMode, setViewMode] = useState<"table" | "text">("table");
   const current = tabs.find((t) => t.name === active) ?? null;
   const isDirty = current ? current.content !== current.saved : false;
 
@@ -72,7 +85,7 @@ export default function FileEditor({
         )}
         {tabs.length === 0 && <div className="tabsbar-empty" />}
         {tabs.map((tab) => {
-          const dirty = tab.content !== tab.saved;
+          const dirty = tab.content !== tab.saved || (isSheetFile(tab.name) && sheetDirty && active === tab.name);
           return (
             <div
               key={tab.name}
@@ -109,12 +122,34 @@ export default function FileEditor({
             <p className="muted">
               Выберите файл в проводнике слева — он откроется прямо в BioGit.
               <br />
-              Изменённый файл можно сохранить кнопкой или сочетанием{" "}
-              <code>Ctrl+S</code>, а затем зафиксировать снимок внизу экрана.
+              CSV — в виде таблицы, книги Excel (xlsx) — в табличном редакторе
+              с формулами, текст — как обычно.
             </p>
           </div>
         </div>
-      ) : current.binary ? (
+      ) : null}
+
+      {/* Табличные редакторы держатся смонтированными всегда,
+          чтобы не терять сессию Excel и несохранённые правки при
+          переключении вкладок */}
+      {tabs.filter((t) => isSheetFile(t.name)).map((tab) => (
+        <div
+          key={`sheet-slot-${tab.name}`}
+          hidden={active !== tab.name}
+          className="sheet-editor-slot"
+        >
+          <SheetEditor
+            path={repoPath}
+            name={tab.name}
+            dirty={sheetDirty}
+            busy={busy}
+            onSave={onSheetSave}
+            onDirtyChange={onSheetDirtyChange}
+          />
+        </div>
+      ))}
+
+      {current && current.binary ? (
         <div className="editor">
           <div className="editor-head">
             <span className="mono">{current.name}</span>
@@ -130,7 +165,65 @@ export default function FileEditor({
             </p>
           </div>
         </div>
-      ) : (
+      ) : current && isCsvFile(current.name) ? (
+        <div className="editor">
+          <div className="editor-head">
+            <span className="mono">{current.name}</span>
+            {isDirty && <span className="badge badge-unsaved">не сохранено</span>}
+            <span className="editor-head-spacer" />
+            <div className="view-switch">
+              <button
+                type="button"
+                className={`btn btn-sm ${viewMode === "table" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setViewMode("table")}
+              >
+                Таблица
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${viewMode === "text" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setViewMode("text")}
+              >
+                Текст
+              </button>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => onSave(current.name)}
+              disabled={busy || !isDirty}
+              title="Сохранить файл на диск (Ctrl+S)"
+            >
+              Сохранить файл
+            </button>
+          </div>
+          {viewMode === "table" ? (
+            <div className="csv-editor-area">
+              <CsvTable
+                text={current.content}
+                onChange={(text) => onChange(current.name, text)}
+              />
+            </div>
+          ) : (
+            <textarea
+              className="editor-textarea"
+              spellCheck={false}
+              value={current.content}
+              onChange={(e) => onChange(current.name, e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          )}
+          <div className="editor-status">
+            <span>UTF-8</span>
+            <span>{current.content.split("\n").length} строк</span>
+            <span>{current.content.length} символов</span>
+            <span className="editor-status-spacer" />
+            <span className="muted">
+              {isDirty ? "есть изменения — Ctrl+S, чтобы сохранить" : "сохранено"}
+            </span>
+          </div>
+        </div>
+      ) : current ? (
         <div className="editor">
           <div className="editor-head">
             <span className="mono">{current.name}</span>
@@ -163,7 +256,7 @@ export default function FileEditor({
             </span>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

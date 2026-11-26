@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, formatSize, shortHash, type RepoState, type Snapshot } from "../api";
+import {
+  api,
+  formatSize,
+  shortHash,
+  type FileDiff,
+  type FileStatus,
+  type RepoState,
+  type Snapshot,
+} from "../api";
 import FileExplorer from "../components/FileExplorer";
 import FileEditor, { type OpenTab } from "../components/FileEditor";
+import DiffView from "../components/DiffView";
+import { Modal, useConfirm } from "../components/Modal";
 
 interface Props {
   path: string;
@@ -22,6 +32,7 @@ function rootName(path: string): string {
 }
 
 export default function Desktop({ path, flash, openFolderPicker }: Props) {
+  const confirm = useConfirm();
   const [state, setState] = useState<RepoState | null>(null);
   const [message, setMessage] = useState("");
   const [author, setAuthor] = useState(() => localStorage.getItem("biogit.author") ?? "");
@@ -33,6 +44,11 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
   const [tabs, setTabs] = useState<OpenTab[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sheetDirty, setSheetDirty] = useState(false);
+
+  // статус рабочих файлов (индикаторы М/Н/У)
+  const [statuses, setStatuses] = useState<FileStatus[] | null>(null);
+  const [diffModal, setDiffModal] = useState<{ diffs: FileDiff[]; title: string } | null>(null);
 
   // рецепт из последнего снимка подтягиваем только при открытии папки,
   // иначе «Обновить» будет затирать правки пользователя
@@ -46,6 +62,8 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
         setParamsText(JSON.stringify(opened.latest.parameters, null, 2));
         paramsInitialized.current = true;
       }
+      const status = await api.fileStatus(path);
+      setStatuses(status);
     } catch (e) {
       setError(String(e));
     }
@@ -60,11 +78,29 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
     setTabs([]);
     setActiveTab(null);
     paramsInitialized.current = false;
+    setSheetDirty(false);
   }, [path]);
+
+  const statusMap = new Map((statuses ?? []).map((s) => [s.name, s.state]));
+  const deletedFiles = (statuses ?? []).filter((s) => s.state === "deleted").map((s) => s.name);
+  const counts = {
+    modified: (statuses ?? []).filter((s) => s.state === "modified").length,
+    added: (statuses ?? []).filter((s) => s.state === "added").length,
+    deleted: deletedFiles.length,
+  };
 
   const openFile = useCallback(
     async (name: string) => {
       if (tabs.some((t) => t.name === name)) {
+        setActiveTab(name);
+        return;
+      }
+      if (/\.(xlsx|xls|xlsm|xlsb|ods)$/i.test(name)) {
+        // книга Excel — открывается табличным редактором без загрузки текста
+        setTabs((prev) => [
+          ...prev,
+          { name, content: "", saved: "", binary: false, size: 0 },
+        ]);
         setActiveTab(name);
         return;
       }
@@ -90,15 +126,23 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
     [path, tabs],
   );
 
-  const closeTab = (name: string) => {
+  const closeTab = async (name: string) => {
     const index = tabs.findIndex((t) => t.name === name);
     if (index < 0) return;
     const tab = tabs[index];
-    if (tab.content !== tab.saved) {
-      const reallyClose = window.confirm(
-        `В файле «${name}» есть несохранённые изменения.\nЗакрыть вкладку и потерять правки?`,
-      );
+    const isSheet = /\.(xlsx|xls|xlsm|xlsb|ods)$/i.test(name);
+    if ((tab.content !== tab.saved && !isSheet) || (isSheet && sheetDirty && activeTab === name)) {
+      const reallyClose = await confirm({
+        title: "Закрыть вкладку?",
+        message: `В файле «${name}» есть несохранённые изменения. Закрыть вкладку и потерять правки?`,
+        confirmLabel: "Закрыть и потерять",
+        danger: true,
+      });
       if (!reallyClose) return;
+    }
+    if (isSheet) {
+      void api.sheetClose().catch(() => {});
+      setSheetDirty(false);
     }
     const next = tabs.filter((t) => t.name !== name);
     setTabs(next);
@@ -130,6 +174,21 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
     }
   };
 
+  const saveSheet = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const savedName = await api.sheetSave(path);
+      flash(`Таблица ${savedName} сохранена`);
+      setSheetDirty(false);
+      await reload();
+    } catch (e) {
+      setError(`Не удалось сохранить таблицу: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleSave = async () => {
     // json проверяем на клиенте, чтобы не гонять заведомо битый в ядро
     try {
@@ -154,6 +213,17 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
   };
 
   const handleRestore = async (snap: Snapshot) => {
+    const ok = await confirm({
+      title: "Вернуть состояние?",
+      message: (
+        <>
+          Файлы рабочей папки будут перезаписаны версиями из снимка{" "}
+          <code>{shortHash(snap.hash)}</code>. История останется без изменений.
+        </>
+      ),
+      confirmLabel: "Вернуть",
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
@@ -167,9 +237,24 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
     }
   };
 
+  const showWorkingDiff = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const diffs = await api.diffWorking(path);
+      setDiffModal({ diffs, title: "Изменения к следующему снимку" });
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!state) {
     return <div className="alert alert-error">{error ?? "Загрузка…"}</div>;
   }
+
+  const hasPendingChanges = counts.modified + counts.added + counts.deleted > 0;
 
   return (
     <div className="ide">
@@ -195,7 +280,13 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
         >
           {rootName(path)}
         </button>
-        <FileExplorer files={state.files} activeFile={activeTab} onOpenFile={(name) => void openFile(name)} />
+        <FileExplorer
+          files={state.files}
+          activeFile={activeTab}
+          statuses={statuses ? statusMap : null}
+          deletedFiles={deletedFiles}
+          onOpenFile={(name) => void openFile(name)}
+        />
         <div className="explorer-foot">
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => void reload()}>
             Обновить
@@ -214,14 +305,18 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
 
       <div className="ide-main">
         <FileEditor
+          repoPath={path}
           tabs={tabs}
           active={activeTab}
           busy={busy}
           sidebarOpen={sidebarOpen}
+          sheetDirty={sheetDirty}
           onSelect={setActiveTab}
-          onClose={closeTab}
+          onClose={(name) => void closeTab(name)}
           onChange={changeTab}
           onSave={(name) => void saveFile(name)}
+          onSheetSave={() => void saveSheet()}
+          onSheetDirtyChange={setSheetDirty}
           onToggleSidebar={() => setSidebarOpen(true)}
         />
 
@@ -264,6 +359,36 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
         </div>
 
         <section className="save-bar">
+          <div className="status-chips" title="Состояние рабочей папки относительно последнего снимка">
+            {hasPendingChanges ? (
+              <>
+                {counts.modified > 0 && (
+                  <button type="button" className="chip chip-modified" onClick={() => void showWorkingDiff()}>
+                    М {counts.modified}
+                  </button>
+                )}
+                {counts.added > 0 && (
+                  <button type="button" className="chip chip-added" onClick={() => void showWorkingDiff()}>
+                    Н {counts.added}
+                  </button>
+                )}
+                {counts.deleted > 0 && (
+                  <button type="button" className="chip chip-deleted" onClick={() => void showWorkingDiff()}>
+                    У {counts.deleted}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => void showWorkingDiff()}
+                >
+                  Показать изменения
+                </button>
+              </>
+            ) : (
+              <span className="chip chip-clean">рабочая папка чистая</span>
+            )}
+          </div>
           <input
             className="input"
             placeholder="Автор (например, Дмитрий)"
@@ -284,6 +409,12 @@ export default function Desktop({ path, flash, openFolderPicker }: Props) {
 
         {error && <div className="alert alert-error">{error}</div>}
       </div>
+
+      {diffModal && (
+        <Modal title={diffModal.title} onClose={() => setDiffModal(null)} wide>
+          <DiffView diffs={diffModal.diffs} />
+        </Modal>
+      )}
     </div>
   );
 }

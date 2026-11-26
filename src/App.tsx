@@ -3,6 +3,7 @@ import { api, type RepoState } from "./api";
 import Desktop from "./screens/Desktop";
 import History from "./screens/History";
 import MergeScreen from "./screens/Merge";
+import { ConfirmProvider, useConfirm } from "./components/Modal";
 
 type Tab = "desktop" | "history" | "merge";
 
@@ -24,6 +25,15 @@ function loadRecent(): string[] {
 }
 
 export default function App() {
+  return (
+    <ConfirmProvider>
+      <BioGitApp />
+    </ConfirmProvider>
+  );
+}
+
+function BioGitApp() {
+  const confirm = useConfirm();
   const [path, setPath] = useState(() => localStorage.getItem("biogit.path") ?? "");
   const [state, setState] = useState<RepoState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,9 +107,19 @@ export default function App() {
       await api.openRepo(folder);
       await openFolderPath(folder, false);
     } catch {
-      const create = window.confirm(
-        `В папке нет репозитория BioGit:\n${folder}\n\nСоздать новый репозиторий в этой папке?`,
-      );
+      const create = await confirm({
+        title: "Создать репозиторий?",
+        message: (
+          <>
+            В папке нет репозитория BioGit:
+            <br />
+            <code>{folder}</code>
+            <br />
+            Создать новый репозиторий в этой папке?
+          </>
+        ),
+        confirmLabel: "Создать",
+      });
       if (create) {
         await openFolderPath(folder, true);
       }
