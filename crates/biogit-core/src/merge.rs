@@ -344,7 +344,7 @@ pub fn propose_merge(
         match (o, t) {
             (Some(oe), Some(te)) if oe.hash == te.hash => {} // одинаково
             (Some(_s2), Some(te)) if same_content(b, te) => {} // меняли только у нас
-            (Some(oe), Some(te)) if same_content(b, oe) => {
+            (Some(oe), Some(_)) if same_content(b, oe) => {
                 // меняли только в источнике — берём их версию
                 let kind = file_kind(path);
                 files.push(ProposedFile::clean(path, kind, "theirs_only"));
@@ -993,8 +993,10 @@ pub(crate) fn merge_text_segments(
 
 /// Старый интерфейс текстового слияния: Ok(байты) при чистом слиянии,
 /// Err(причина) при конфликте.
+#[cfg(test)]
 pub(crate) type ContentMergeOutcome = std::result::Result<Vec<u8>, String>;
 
+#[cfg(test)]
 pub(crate) fn merge_text_three_way(
     base: Option<&[u8]>,
     ours: &[u8],
@@ -1130,6 +1132,7 @@ pub(crate) fn merge_csv_with_details(
 }
 
 /// Старый интерфейс CSV-слияния.
+#[cfg(test)]
 pub(crate) fn merge_csv_three_way(
     base: Option<&[u8]>,
     ours: &[u8],
