@@ -4,10 +4,13 @@
 
 mod commands;
 
+use std::sync::Mutex;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .manage(commands::SheetState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             commands::open_repo,
             commands::init_repo,
@@ -22,6 +25,21 @@ pub fn run() {
             commands::pick_folder,
             commands::read_file,
             commands::write_file,
+            // статус и diff
+            commands::file_status,
+            commands::diff_working,
+            commands::diff_between,
+            commands::history_graph_cmd,
+            // двухфазное слияние
+            commands::merge_propose,
+            commands::merge_apply,
+            // Excel (уровень A) + встроенный fallback
+            commands::excel_status,
+            commands::sheet_open,
+            commands::sheet_set_active,
+            commands::sheet_edit,
+            commands::sheet_save,
+            commands::sheet_close_cmd,
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {

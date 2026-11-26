@@ -27,17 +27,32 @@
 //! ```
 
 pub mod branch;
+pub mod diff;
 pub mod encoding;
 pub mod error;
+pub mod excel;
+pub mod formula;
+pub mod graph;
 pub mod merge;
 pub mod object;
 pub mod snapshot;
 pub mod storage;
 
 pub use branch::BranchInfo;
+pub use diff::{CsvDiff, DiffLine, FileDiff, FileStatus, working_status, diff_snapshots, diff_working_vs_snapshot};
 pub use encoding::{pack_two_bit, reverse_complement, unpack_two_bit, Packed2Bit};
 pub use error::{BioGitError, Result};
-pub use merge::{merge_branch, ConflictItem, MergeReport};
+pub use excel::{
+    SheetCell, SheetDoc, SheetGrid, SheetSession, sheet_open, sheet_set_active, sheet_edit,
+    sheet_save, sheet_close, sheet_dirty, excel_probe, EditOutcome, ExcelAvailability,
+};
+pub use formula::evaluate_sheet;
+pub use graph::{history_graph, GraphData, GraphNode};
+pub use merge::{
+    merge_branch, merge_branch_with_options, apply_merge, apply_proposal, propose_merge,
+    FileDecision, MergeOptions, MergeProposal, MergeReport, ProposedFile, ConflictDetail,
+    ConflictItem,
+};
 pub use object::{Snapshot, Tree, TreeEntry};
 pub use snapshot::{FileContent, FileEntry, Repo};
 pub use storage::BlobStore;
