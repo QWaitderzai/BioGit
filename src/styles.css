@@ -1042,3 +1042,610 @@ code {
     border-bottom: 1px solid var(--border);
   }
 }
+/* ==========================================================================
+   Новые компоненты: модалки, статусы, diff, CSV-таблица, грид, конфликты, граф
+   ========================================================================== */
+
+/* модальные окна */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 12, 0.66);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal-card {
+  width: 460px;
+  max-width: 100%;
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+}
+
+.modal-card-content {
+  width: 640px;
+}
+
+.modal-wide {
+  width: min(960px, 94vw);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.modal-title {
+  font-size: 16px;
+}
+
+.modal-message {
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #f0655e;
+}
+
+.alert-error-inline {
+  background: rgba(229, 83, 75, 0.14);
+  border: 1px solid var(--danger);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: inline-block;
+}
+
+/* бейджи статусов файлов */
+.st-badge {
+  margin-left: auto;
+  margin-right: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.st-badge.st-modified { background: rgba(255, 166, 87, 0.18); color: #ffa657; }
+.st-badge.st-added { background: rgba(87, 171, 90, 0.2); color: #7ee787; }
+.st-badge.st-deleted { background: rgba(229, 83, 75, 0.18); color: #ff7b72; }
+
+.tree-row-modified .tree-name { color: #ffa657; }
+.tree-row-added .tree-name { color: #7ee787; }
+
+.tree-deleted {
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+.tree-row-deleted {
+  color: #ff7b72;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  cursor: default;
+}
+
+.badge.st-added { background: rgba(87, 171, 90, 0.2); color: #7ee787; }
+.badge.st-modified { background: rgba(255, 166, 87, 0.18); color: #ffa657; }
+.badge.st-deleted { background: rgba(229, 83, 75, 0.18); color: #ff7b72; }
+
+/* чипы статуса в панели сохранения */
+.status-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 210px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  background: var(--fill);
+  color: var(--muted);
+}
+
+button.chip {
+  cursor: pointer;
+}
+
+.chip-modified { color: #ffa657; border-color: rgba(255, 166, 87, 0.5); }
+.chip-added { color: #7ee787; border-color: rgba(126, 231, 135, 0.5); }
+.chip-deleted { color: #ff7b72; border-color: rgba(255, 123, 114, 0.5); }
+.chip-clean { color: #8b949e; font-style: italic; }
+
+/* diff */
+.diff-view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.diff-file {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.diff-file-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.diff-lines {
+  font-family: var(--mono);
+  font-size: 12px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.diff-line {
+  display: flex;
+  padding: 0 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-line-plus { background: rgba(87, 171, 90, 0.16); color: #aff5b4; }
+.diff-line-minus { background: rgba(229, 83, 75, 0.14); color: #ffb1ac; }
+
+.diff-sign {
+  width: 18px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.diff-old { color: #ff9d97; text-decoration: line-through; }
+.diff-new { color: #7ee787; }
+.diff-arrow { margin: 0 6px; color: var(--muted); }
+
+.csv-diff {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.csv-diff-table {
+  max-height: 260px;
+}
+
+.csv-cell-changed {
+  white-space: nowrap;
+}
+
+.csv-row-added { background: rgba(87, 171, 90, 0.12); }
+.csv-row-removed { background: rgba(229, 83, 75, 0.12); }
+
+/* CSV-таблица */
+.csv-wrap {
+  overflow: auto;
+  flex: 1;
+  padding: 8px;
+}
+
+.csv-table {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 100%;
+}
+
+.csv-table th,
+.csv-table td {
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  text-align: left;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.csv-table th {
+  background: var(--bg-2);
+  position: sticky;
+  top: 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.csv-rownum {
+  color: var(--muted);
+  background: var(--bg-2);
+  text-align: right;
+  width: 40px;
+}
+
+.csv-table td:hover {
+  background: var(--fill);
+}
+
+.csv-cell-editing {
+  padding: 0 !important;
+}
+
+.csv-cell-input {
+  width: 100%;
+  border: none;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  padding: 4px 10px;
+  outline: 2px solid var(--accent);
+}
+
+.csv-hint {
+  margin-top: 8px;
+}
+
+.csv-editor-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.view-switch {
+  display: flex;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+/* табличный редактор (Excel / builtin) */
+.badge-excel {
+  background: rgba(126, 231, 135, 0.16);
+  color: #7ee787;
+}
+
+.badge-builtin {
+  background: rgba(88, 166, 255, 0.16);
+  color: #79c0ff;
+}
+
+.sheet-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet-tab {
+  background: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  color: var(--muted);
+  padding: 4px 14px;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.sheet-tab-active {
+  color: var(--text);
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+.formula-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+}
+
+.formula-cell-ref {
+  font-family: var(--mono);
+  color: var(--accent);
+  min-width: 52px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.formula-input {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.sheet-grid-wrap {
+  flex: 1;
+  overflow: auto;
+}
+
+.sheet-grid {
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.sheet-grid th,
+.sheet-grid td {
+  border: 1px solid #262c33;
+  padding: 3px 8px;
+  min-width: 88px;
+  max-width: 260px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sheet-colhead {
+  background: var(--bg-2);
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  min-width: 44px !important;
+}
+
+.sheet-rownum {
+  background: var(--bg-2);
+  color: var(--muted);
+  text-align: center;
+  min-width: 44px !important;
+  position: sticky;
+  left: 0;
+}
+
+.sheet-cell {
+  cursor: cell;
+  font-family: var(--mono);
+}
+
+.sheet-cell:hover {
+  background: var(--fill);
+}
+
+.sheet-cell-formula {
+  color: #79c0ff;
+}
+
+.sheet-cell-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.sheet-note {
+  padding: 6px 10px;
+}
+
+.ext-sheet {
+  color: #7ee787;
+}
+
+/* разрешение конфликтов */
+.conflict-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.conflict-panel-spacer {
+  flex: 1;
+}
+
+.conflict-file {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.conflict-file-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.conflict-file-spacer {
+  flex: 1;
+}
+
+.conflict-hunk {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+}
+
+.conflict-hunk:last-child {
+  border-bottom: none;
+}
+
+.conflict-hunk-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.conflict-hunk-spacer {
+  flex: 1;
+}
+
+.conflict-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.conflict-side {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border: 1px solid transparent;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.conflict-side-ours {
+  background: rgba(87, 171, 90, 0.1);
+  border-color: rgba(87, 171, 90, 0.35);
+}
+
+.conflict-side-theirs {
+  background: rgba(88, 166, 255, 0.1);
+  border-color: rgba(88, 166, 255, 0.35);
+}
+
+.conflict-side-chosen {
+  outline: 2px solid var(--accent);
+}
+
+.btn-theirs-active {
+  background: rgba(88, 166, 255, 0.22);
+  border-color: var(--accent);
+  color: #79c0ff;
+}
+
+.conflict-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.conflict-cell:last-child {
+  border-bottom: none;
+}
+
+.conflict-values {
+  display: inline-flex;
+  align-items: center;
+}
+
+.conflict-cell-spacer {
+  flex: 1;
+}
+
+.conflict-file-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  flex-wrap: wrap;
+}
+
+/* граф истории */
+.gitgraph {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  flex: 1;
+  padding-bottom: 8px;
+}
+
+.gitgraph-canvas {
+  flex-shrink: 0;
+}
+
+.gitgraph-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.gitgraph-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+}
+
+.gitgraph-card-main {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.gitgraph-card-msg {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gitgraph-card-msg .timeline-message,
+.gitgraph-card-msg .timeline-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.alert-compare {
+  background: rgba(88, 166, 255, 0.12);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+/* слоты табличных редакторов: держатся смонтированными, скрываются атрибутом hidden */
+.sheet-editor-slot {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.sheet-editor-slot[hidden] {
+  display: none;
+}
