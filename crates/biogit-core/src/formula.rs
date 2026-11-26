@@ -243,13 +243,6 @@ impl Parser {
         t
     }
 
-    fn expect_op(&mut self, op: &str) -> Result<(), String> {
-        match self.next() {
-            Some(Token::Op(o)) if o == op => Ok(()),
-            _ => Err("#ОШИБКА!".to_string()),
-        }
-    }
-
     fn parse_expr(&mut self) -> Result<Node, String> {
         self.parse_cmp()
     }
