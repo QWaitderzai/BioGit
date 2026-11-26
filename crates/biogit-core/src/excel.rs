@@ -96,16 +96,6 @@ enum Backend {
     Builtin,
 }
 
-impl SheetSession {
-    /// Текущая активная сетка.
-    fn active_grid(&mut self) -> Result<&mut SheetGrid> {
-        self.doc
-            .sheets
-            .get_mut(self.doc.active_sheet)
-            .ok_or_else(|| BioGitError::InvalidState("активный лист не найден".into()))
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Открытие / закрытие
 // ---------------------------------------------------------------------------
