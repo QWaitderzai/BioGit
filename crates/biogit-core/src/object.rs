@@ -86,10 +86,7 @@ impl Snapshot {
             parameters,
             files_count,
         };
-        let bytes = match serde_json::to_vec(&data) {
-            Ok(bytes) => bytes,
-            Err(_) => Vec::new(), // сериализация таких структур не может отказать
-        };
+        let bytes = serde_json::to_vec(&data).unwrap_or_default();
         let mut hasher = Sha256::new();
         hasher.update(&bytes);
         format!("sha256:{}", hex::encode(hasher.finalize()))
@@ -103,8 +100,8 @@ mod tests {
     fn sample_snapshot() -> Snapshot {
         Snapshot {
             hash: String::new(),
-            timestamp: "2026-10-29T14:30:00Z".to_string(),
-            author: "Дмитрий".to_string(),
+            timestamp: "xxxx-xx-xxTxx:xx:xxZ".to_string(),
+            author: "name".to_string(),
             message: "Первый снимок".to_string(),
             parent: Vec::new(),
             branch: "main".to_string(),

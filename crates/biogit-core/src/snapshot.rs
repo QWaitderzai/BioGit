@@ -370,19 +370,13 @@ impl Repo {
             .filter_entry(|e| e.depth() == 0 || !e.file_name().to_string_lossy().starts_with('.'));
         for entry in walker {
             let entry = entry.map_err(|e| {
-                BioGitError::Io(io::Error::new(
-                    io::ErrorKind::Other,
-                    format!("обход папки: {e}"),
-                ))
+                BioGitError::Io(io::Error::other(format!("обход папки: {e}")))
             })?;
             if !entry.file_type().is_file() {
                 continue;
             }
             let rel = entry.path().strip_prefix(&self.root).map_err(|e| {
-                BioGitError::Io(io::Error::new(
-                    io::ErrorKind::Other,
-                    format!("относительный путь: {e}"),
-                ))
+                BioGitError::Io(io::Error::other(format!("относительный путь: {e}")))
             })?;
             let name = rel.to_string_lossy().replace('\\', "/");
             let size = entry.metadata()?.len();
