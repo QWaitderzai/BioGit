@@ -43,6 +43,9 @@ pub enum BioGitError {
     #[error("ошибка CSV: {0}")]
     Csv(String),
 
+    #[error("ошибка Excel: {0}")]
+    Excel(String),
+
     #[error("ошибка ввода-вывода: {0}")]
     Io(#[from] std::io::Error),
 
@@ -64,7 +67,7 @@ impl From<walkdir::Error> for BioGitError {
         let text = e.to_string();
         match e.into_io_error() {
             Some(io) => BioGitError::Io(io),
-            None => BioGitError::Io(std::io::Error::new(std::io::ErrorKind::Other, text)),
+            None => BioGitError::Io(std::io::Error::other(text)),
         }
     }
 }
